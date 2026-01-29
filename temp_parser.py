@@ -4,7 +4,7 @@ import requests
 
 # BeautifulSoup - бібліотека для парсингу HTML та XML
 # Дозволяє зручно працювати з тегами, класами, атрибутами
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 # urllib - вбудована бібліотека Python для роботи з URL-адресами
 # Функція urljoin використовується для коректного об'єднання базового URL з відносними шляхами
@@ -25,6 +25,26 @@ from urllib3.util.retry import Retry
 # HTTPAdapter - дозволяє підключити механізм Retry до requests.Session
 # Використовується для налаштування повторних запитів, таймаутів і адаптерів з'єднання
 from requests.adapters import HTTPAdapter
+
+# Імпортуємо декоратор dataclass для створення класів даних
+# Дозволяє створювати класи, які:
+# - зберігають дані у вигляді атрибутів
+# - автоматично генерують методи __init__, __repr__, __eq__ та ін.
+# - роблять код більш чистим та зручним для обробки структурованих даних
+from dataclasses import dataclass
+
+@dataclass
+class Product:
+    # Назва товару
+    title: str
+    # Детальний опис товару
+    description: str
+    # Ціна у вигляді числа з плаваючою точкою
+    price: float
+    # Рейтинг товару (ціле число від 1 до 5)
+    rating: int
+    # Кількість відгуків про товар
+    num_of_reviews: int
 
 # Створюємо об'єкт генератора випадкових User-Agent
 # Кожен виклик user_agent.random повертає інший User-Agent браузера
@@ -129,6 +149,48 @@ def get_home_products():
     except Exception as e:
         print(f"⚠️ Неочікувана помилка: {e}")
         return None
+
+def parse_single_product(product: Tag) -> Product:
+    return Product(
+        # Назва товару
+        # .select_one(".title") - шукає перший елемент з класом "title" всередині блоку товару
+        # ["title"] - використовуємо значення HTML-атрибуту 'title'
+        title=product.select_one(".title")["title"],
+
+        # Опис товару
+        # .text - повертає весь текст всередині HTML-тега
+        description=product.select_one(".description").text,
+
+        # Ціна товару
+        # .text - отримуємо рядок типу "$123.45"
+        # .replace("$", "") - прибираємо символ валюти, щоб залишилися лише цифри
+        # float(...) - перетворюємо текст в число з плаваючою крапкою
+        price=float(
+            product
+            .select_one(".price")
+            .text
+            .replace("$", "")
+        ),
+
+        # Рейтинг товару
+        # [data-rating] - HTML-атрибут з числовим значенням рейтингу
+        # int(...) - перетворюємо текстовий рейтинг в ціле число
+        rating=int(
+            product
+            .select_one("[data-rating]")["data-rating"]
+        ),
+
+        # Кількість відгуків
+        # .text - рядок типу "12 reviews"
+        # .split()[0] - розбиваємо рядок за пробілом та отримуємо перше слово ("12")
+        # int(...) - перетворюємо перше слово в число
+        num_of_reviews=int(
+            product
+            .select_one(".review-count")
+            .text
+            .split()[0]
+        )
+    )
 
 def main():
     """
