@@ -56,7 +56,7 @@ web_scraper_group_6/
 
 ```bash
 git clone <repository-url>
-cd web_scraper_group_6
+cd web_scraper
 ```
 
 2. Create and activate virtual environment:
